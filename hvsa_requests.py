@@ -33,15 +33,18 @@ class HvsaRequests:
         return league_ids
 
 
-    async def get_league_page_league_id(self, league_id: str) -> str:
+    async def get_league_page_league_id(self, league_id: str) -> str | None:
         url: str = f'{self.__HVSA}{league_id}+{self.year}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 return await response.text()
 
-    async def get_league_districts_league_id(self, league_id: str) -> dict[str, list[dict[str, str]]]:
+    async def get_league_districts_league_id(self, league_id: str) -> dict[str, list[dict[str, str]]] | None:
         page = await self.get_league_page_league_id(league_id)
+        if page == None:
+            print('No page found')
+            return None
         return self.__parse_league_districts(page)
 
 
@@ -67,8 +70,11 @@ class HvsaRequests:
                     league_district[category].append({'name': team_name, 'url': team_url})
         return league_district
 
-    async def get_district_teams_league_id_page(self, league_id: str, district: str):
+    async def get_district_teams_league_id_page(self, league_id: str, district: str) -> str | None:
         league_districts = await self.get_league_districts_league_id(league_id)
+        if league_districts is None:
+            print('No league found')
+            return None
         if district in league_districts and  league_districts[district]:
             for entry in league_districts[district]:
                 url = self.__HTTPS + self.__Domain + entry['url']
@@ -116,17 +122,23 @@ class HvsaRequests:
         return tables
 
 
-    async def get_district_team_league_id_table(self, league_id: str, district: str) -> list[Table]:
+    async def get_district_team_league_id_table(self, league_id: str, district: str) -> list[Table] | None:
         page = await self.get_district_teams_league_id_page(league_id, district)
+        if page == None:
+            print('No district found')
+            return None
         return self.__parse_district_teams_page(page)
 
-    async def get_district_team_league_id_team_table_entry(self, league_id: str, district: str, team_name: str) -> Table:
+    async def get_district_team_league_id_team_table_entry(self, league_id: str, district: str, team_name: str) -> Table | None:
         list_table: list[Table] = await self.get_district_team_league_id_table(league_id, district)
+        if list_table is None:
+            print('No table found')
+            return None
         for table in list_table:
             if table.team == team_name:
                 return table
 
-    async def get_district_team_league_id_team_table_games_page(self, league_id: str, district: str, team_name: str):
+    async def get_district_team_league_id_team_table_games_page(self, league_id: str, district: str, team_name: str) -> str | None:
         table: Table = await self.get_district_team_league_id_team_table_entry(league_id, district, team_name)
         if table is None:
             print('No team found')
@@ -162,7 +174,7 @@ class HvsaRequests:
             print(e)
             return False
 
-    async def get_district_team_league_id_team_table_games_list(self, league_id: str, district: str, team_name: str) -> list[Games]:
+    async def get_district_team_league_id_team_table_games_list(self, league_id: str, district: str, team_name: str) -> list[Games] | None:
         page = await self.get_district_team_league_id_team_table_games_page(league_id, district, team_name)
         if page == None:
             print('No games found')
