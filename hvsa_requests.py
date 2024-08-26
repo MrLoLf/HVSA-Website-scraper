@@ -128,6 +128,9 @@ class HvsaRequests:
 
     async def get_district_team_league_id_team_table_games_page(self, league_id: str, district: str, team_name: str):
         table: Table = await self.get_district_team_league_id_team_table_entry(league_id, district, team_name)
+        if table is None:
+            print('No team found')
+            return None
         url = self.__HTTPS + self.__Domain + table.url
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -161,6 +164,9 @@ class HvsaRequests:
 
     async def get_district_team_league_id_team_table_games_list(self, league_id: str, district: str, team_name: str) -> list[Games]:
         page = await self.get_district_team_league_id_team_table_games_page(league_id, district, team_name)
+        if page == None:
+            print('No games found')
+            return None
         soup = BeautifulSoup(page, 'html.parser')
         table_tag: ResultSet = soup.find_all('table', {'class': 'result-set'})
         rows = table_tag[1].find_all('tr')[1:]
@@ -181,7 +187,7 @@ class HvsaRequests:
                 date=date,
                 time=time,
                 sports_hall=sports_hall,
-                sports_hall_url=sports_hall_url,
+                sports_hall_url= self.__HTTPS + self.__Domain +sports_hall_url,
                 nr=nr,
                 home_team=home_team,
                 guest_team=guest_team

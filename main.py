@@ -17,6 +17,12 @@ import pyexcel_ods3
 from datetime import datetime, timedelta
 
 def save_games_to_ods(games: list[Games], home_team: str) -> bool:
+    if games == []:
+        return False
+    if home_team == '':
+        return False
+    if games is None:
+        return False
     # Initialize the ODS data structure
     ods_data = {}
 
@@ -77,8 +83,12 @@ async def main() -> None:
     config_instance: Config = config.load_config()
     year: str = config_instance.year
     req: HvsaRequests = HvsaRequests(year)
-    games:list[Games] = await req.get_district_team_league_id_team_table_games_list('West','Männer','TSV Wefensleben')
-    save_games_to_ods(games, 'TSV Wefensleben')
+    games:list[Games] = await req.get_district_team_league_id_team_table_games_list('West','Männer','TSV Wefensleben 1990')
+    res: bool = save_games_to_ods(games, 'TSV Wefensleben')
+    if res:
+        print('Games saved to games.ods')
+    else:
+        print('Error saving games to games.ods')
 
 if __name__ == '__main__':
     asyncio.run(main())
