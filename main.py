@@ -5,6 +5,7 @@
 @Description: This script is the main entry point for the HVSA-Handball-Scraper.
 It loads the configuration from the config.toml file, then it uses the hvsa_requests.py
 module to get the league districts for the year specified in the config file.
+@License: MIT
 """
 
 import asyncio

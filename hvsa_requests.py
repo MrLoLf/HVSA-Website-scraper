@@ -1,3 +1,10 @@
+
+"""
+@Author: Fabian Roscher
+@Desciption: Scraper for hvsa website
+@License: MIT
+"""
+
 import aiohttp
 from bs4 import BeautifulSoup, Tag, ResultSet
 from table import Table
