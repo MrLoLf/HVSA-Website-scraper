@@ -12,6 +12,6 @@ def load_config() -> Config:
     config: ConfigParser = configparser.ConfigParser()
     config.read('config.toml', encoding='utf-8')
     year: str = config.get('HVSA', 'year')
-    year = year.replace('/', '%2F')
-    teams = config.get('HVSA', 'teams').split(',')
+    year = year.replace('/', '%2F').strip()
+    teams = [team.strip() for team in config.get('HVSA', 'teams').split(',')]
     return Config(year, teams)
