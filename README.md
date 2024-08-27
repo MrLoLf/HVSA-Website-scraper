@@ -5,7 +5,7 @@
 1. **Create a Python 3 virtual environment:**
 
    ```bash
-   python3 -m venv venv
+   python3 -m venv .venv
    ```
 
 2. Activate the virtual environment:
@@ -13,13 +13,13 @@
     On Linux/Mac:
 
     ```bash
-    source venv/bin/activate
+    source .venv/bin/activate
     ```
 
     On Windows:
 
     ```bash
-    .\venv\Scripts\activate
+    .\.venv\Scripts\activate
     ```
 
 3. Install the dependencies:

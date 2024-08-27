@@ -1,3 +1,5 @@
-pyexcel-ods3 >=0.6.1;
-aiohttp >=3.10.5;
-beautifulsoup4 >=4.12.3;
+pyexcel-ods3 >=0.6.1
+aiohttp >=3.10.5
+beautifulsoup4 >=4.12.3
+odfpy >=1.4.1
+attrs>=24.2.0

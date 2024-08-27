@@ -1,7 +1,7 @@
 
 """
 @Author: Fabian Roscher
-@Desciption: Scraper for hvsa website
+@Description: Scraper for hvsa website
 @License: MIT
 """
 
@@ -24,7 +24,7 @@ class HvsaRequests:
     def get_league_ids() -> set[str]:
         league_ids: set[str] = {
             'MHV',
-            'HVSA'
+            'HVSA',
             'Anhalt',
             'Nord',
             'Süd',
@@ -201,7 +201,10 @@ class HvsaRequests:
             date = cols[1].text.strip()
             time = cols[2].text.strip()
             sports_hall = cols[3].text.strip()
-            sports_hall_url = cols[3].find('a')['href']
+            try:
+                sports_hall_url = cols[3].find('a')['href']
+            except TypeError:
+                sports_hall_url = ''
             nr = cols[4].text.strip()
             home_team = cols[5].text.strip()
             guest_team = cols[6].text.strip()
@@ -211,7 +214,7 @@ class HvsaRequests:
                 date=date,
                 time=time,
                 sports_hall=sports_hall,
-                sports_hall_url= self.__HTTPS + self.__Domain +sports_hall_url,
+                sports_hall_url= self.__HTTPS + self.__Domain + sports_hall_url,
                 nr=nr,
                 home_team=home_team,
                 guest_team=guest_team
