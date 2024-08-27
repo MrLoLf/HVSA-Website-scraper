@@ -125,8 +125,8 @@ async def get_all_games(year: str, league_ids: set[str], team_name: str) -> list
 async def main() -> None:
     config_instance: Config = config.load_config()
     year: str = config_instance.year
+    team: str = config_instance.team
     req: HvsaRequests = HvsaRequests(year)
-    team: str = 'TSV Wefensleben'
     league_ids: set[str] = req.get_league_ids()
     games: list[Games] = await get_all_games(year, league_ids, team)
     save_games_to_ods(games, team)
