@@ -40,8 +40,8 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
 
     # Sort games by date
     time_regex = re.compile(r'[\d:]+')
-    games.sort(key=lambda game: (
-    datetime.strptime(game.date.strip(), '%d.%m.%Y'), datetime.strptime(time_regex.search(game.time).group(), '%H:%M')))
+    games.sort(key=lambda gam: (
+    datetime.strptime(gam.date.strip(), '%d.%m.%Y'), datetime.strptime(time_regex.search(gam.time).group(), '%H:%M')))
     # Define styles for coloring text
     red_text_style = Style(name="RedText", family="text")
     red_text_style.addElement(TextProperties(color="#FF0000"))
