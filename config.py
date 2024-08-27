@@ -6,12 +6,12 @@ from dataclasses import dataclass
 @dataclass
 class Config:
     year: str
-    team: str
+    teams: list[str]
 
 def load_config() -> Config:
     config: ConfigParser = configparser.ConfigParser()
     config.read('config.toml')
     year: str = config.get('HVSA', 'year')
     year = year.replace('/', '%2F')
-    team = config.get('HVSA', 'team')
-    return Config(year, team)
+    teams = config.get('HVSA', 'teams').split(',')
+    return Config(year, teams)

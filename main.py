@@ -24,14 +24,14 @@ import re
 
 
 
-def save_games_to_ods(games: list[Games], home_team: str) -> bool:
+def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
     if games is None:
         print("No games provided.")
         return False
     if not games:
         print("Empty games list.")
         return False
-    if home_team == '':
+    if home_teams is []:
         print("Home team not specified.")
         return False
 
@@ -56,7 +56,7 @@ def save_games_to_ods(games: list[Games], home_team: str) -> bool:
 
     # Add header row
     header_row = TableRow()
-    for header in ["Date", "Time", "Home Team", "Guest Team", "Sports Hall"]:
+    for header in ["Date", "Time", "Home Team", "Guest Team", "Sports Hall", "Sports Hall URL", "Section", "League"]:
         cell = TableCell()
         cell.addElement(P(text=header))
         header_row.addElement(cell)
@@ -65,7 +65,7 @@ def save_games_to_ods(games: list[Games], home_team: str) -> bool:
     # Add game rows
     for game in games:
         row = TableRow()
-        for value in [game.date, game.time, game.home_team, game.guest_team, game.sports_hall]:
+        for value in [game.date, game.time, game.home_team, game.guest_team, game.sports_hall, game.sports_hall_url, game.section, game.league]:
             cell = TableCell()
             if value == "2161":
                 text_element = P()
@@ -84,10 +84,10 @@ def save_games_to_ods(games: list[Games], home_team: str) -> bool:
 
     # Save the ODS file
     try:
-        if os.path.exists(f"{home_team}_games.ods"):
-            os.remove(f"{home_team}_games.ods")
-        ods.save(f"{home_team}_games.ods")
-        print(f"File {home_team}_games.ods saved successfully.")
+        if os.path.exists(f"{home_teams[0]}_games.ods"):
+            os.remove(f"{home_teams[0]}_games.ods")
+        ods.save(f"{home_teams[0]}_games.ods")
+        print(f"File {home_teams[o]}_games.ods saved successfully.")
         return True
     except Exception as e:
         print(f"Error saving file: {e}")
@@ -110,26 +110,27 @@ async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | 
         games.extend(games_req)
     return games
 
-async def get_all_games(year: str, league_ids: set[str], team_name: str) -> list[Games]:
+async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) -> list[Games]:
     games = []
-    for league_id in league_ids:
-        if league_id is None:
-            continue
-        games_league = await get_games(year, league_id, team_name)
-        if games_league is None or games_league is []:
-            print(f'No games found for {team_name} in {league_id}')
-            continue
-        games.extend(games_league)
+    for team_name in team_names:
+        for league_id in league_ids:
+            if league_id is None:
+                continue
+            games_league = await get_games(year, league_id, team_name)
+            if games_league is None or games_league is []:
+                print(f'No games found for {team_name} in {league_id}')
+                continue
+            games.extend(games_league)
     return games
 
 async def main() -> None:
     config_instance: Config = config.load_config()
     year: str = config_instance.year
-    team: str = config_instance.team
+    teams: list[str] = config_instance.teams
     req: HvsaRequests = HvsaRequests(year)
     league_ids: set[str] = req.get_league_ids()
-    games: list[Games] = await get_all_games(year, league_ids, team)
-    save_games_to_ods(games, team)
+    games: list[Games] = await get_all_games(year, league_ids, teams)
+    save_games_to_ods(games, teams)
 
 if __name__ == '__main__':
     asyncio.run(main())

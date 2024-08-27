@@ -11,3 +11,5 @@ class Games:
     nr: int
     home_team: str
     guest_team: str
+    league: str
+    section: str

@@ -217,7 +217,9 @@ class HvsaRequests:
                 sports_hall_url= self.__HTTPS + self.__Domain + sports_hall_url,
                 nr=nr,
                 home_team=home_team,
-                guest_team=guest_team
+                guest_team=guest_team,
+                league=league_id,
+                section=section
             )
             games.append(game)
         return games
