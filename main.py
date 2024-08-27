@@ -87,7 +87,7 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
         if os.path.exists(f"{home_teams[0]}_games.ods"):
             os.remove(f"{home_teams[0]}_games.ods")
         ods.save(f"{home_teams[0]}_games.ods")
-        print(f"File {home_teams[o]}_games.ods saved successfully.")
+        print(f"File {home_teams[0]}_games.ods saved successfully.")
         return True
     except Exception as e:
         print(f"Error saving file: {e}")
