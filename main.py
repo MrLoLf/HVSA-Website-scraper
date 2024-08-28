@@ -40,8 +40,11 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
 
     # Sort games by date
     time_regex = re.compile(r'[\d:]+')
+    date_regex = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')
     games.sort(key=lambda gam: (
-    datetime.strptime(gam.date.strip(), '%d.%m.%Y'), datetime.strptime(time_regex.search(gam.time).group(), '%H:%M')))
+        datetime.strptime(date_regex.search(gam.date).group() if date_regex.search(gam.date) else '01.01.1970', '%d.%m.%Y'),
+        datetime.strptime(time_regex.search(gam.time).group() if time_regex.search(gam.time) else '00:00', '%H:%M')
+    ))
     # Define styles for coloring text
     red_text_style = Style(name="RedText", family="text")
     red_text_style.addElement(TextProperties(color="#FF0000"))
@@ -50,6 +53,11 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
     blue_text_style = Style(name="BlueText", family="text")
     blue_text_style.addElement(TextProperties(color="#0000FF"))
     ods.styles.addElement(blue_text_style)
+
+    green_text_style = Style(name="GreenText", family="text")
+    green_text_style.addElement(TextProperties(color="#00FF00"))
+    ods.styles.addElement(green_text_style)
+
 
     # Create a table
     table = Table(name="Games")
@@ -73,6 +81,9 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
             elif value == "1053":
                 text_element = P()
                 text_element.addElement(Span(text=value, stylename=blue_text_style))
+            elif value == "205101":
+                text_element = P()
+                text_element.addElement(Span(text=value, stylename=green_text_style))
             else:
                 text_element = P(text=value)
             cell.addElement(text_element)
@@ -111,16 +122,23 @@ async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | 
     return games
 
 async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) -> list[Games]:
-    games = []
+    tasks = []
     for team_name in team_names:
         for league_id in league_ids:
             if league_id is None:
                 continue
-            games_league = await get_games(year, league_id, team_name)
-            if games_league is None or games_league is []:
-                print(f'No games found for {team_name} in {league_id}')
-                continue
-            games.extend(games_league)
+            tasks.append(get_games(year, league_id, team_name))
+
+    results = await asyncio.gather(*tasks)
+
+    games = []
+    for i, result in enumerate(results):
+        if result is None or result == []:
+            team_name = team_names[i // len(league_ids)]
+            league_id = list(league_ids)[i % len(league_ids)]
+            print(f'No games found for team: {team_name} in league: {league_id}')
+            continue
+        games.extend(result)
     return games
 
 async def main() -> None:
