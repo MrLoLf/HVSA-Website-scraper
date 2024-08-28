@@ -22,9 +22,17 @@ import os
 import re
 
 
-
-
 def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
+    """
+    Save the provided games to an ODS file.
+
+    Args:
+        games (list[Games]): A list of games to be saved.
+        home_teams (list[str]): A list of home team names.
+
+    Returns:
+        bool: True if the file was saved successfully, False otherwise.
+    """
     if games is None:
         print("No games provided.")
         return False
@@ -106,6 +114,17 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
 
 
 async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | None:
+    """
+    Fetch games for a specific team in a specific league and year.
+
+    Args:
+        year (str): The year for which to fetch games.
+        league_id (str): The league ID to fetch games for.
+        team_name (str): The team name to fetch games for.
+
+    Returns:
+        list[Games] | None: A list of games if found, otherwise None.
+    """
     req: HvsaRequests = HvsaRequests(year)
     sections: dict[str, list[dict[str, str]]] = await req.get_league_sections_league_id(league_id)
     if sections is None:
@@ -122,6 +141,17 @@ async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | 
     return games
 
 async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) -> list[Games]:
+    """
+    Fetch all games for the given year, league IDs, and team names.
+
+    Args:
+        year (str): The year for which to fetch games.
+        league_ids (set[str]): A set of league IDs to fetch games for.
+        team_names (list[str]): A list of team names to fetch games for.
+
+    Returns:
+        list[Games]: A list of games fetched for the given parameters.
+    """
     tasks = []
     for team_name in team_names:
         for league_id in league_ids:
@@ -142,6 +172,9 @@ async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) 
     return games
 
 async def main() -> None:
+    """
+    Main entry point of the script. Loads configuration, fetches games, and saves them to an ODS file.
+    """
     config_instance: Config = config.load_config()
     year: str = config_instance.year
     teams: list[str] = config_instance.teams

@@ -1,5 +1,15 @@
 # HVSA Scraper
 
+## Description
+
+HVSA Scraper is a Python-based tool designed to scrape handball league data from the HVSA website. It retrieves league sections, team tables, and game information, and saves the data into an ODS file.
+
+## Features
+
+- Scrape league sections and team tables.
+- Retrieve game information for specific teams.
+- Save the scraped data into an ODS file.
+
 ## Setup Instructions
 
 1. **Create a Python 3 virtual environment:**
