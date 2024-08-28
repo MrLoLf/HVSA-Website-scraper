@@ -9,6 +9,7 @@ import aiohttp
 from bs4 import BeautifulSoup, Tag, ResultSet
 from table import Table
 from games import Games
+import logging
 
 
 class HvsaRequests:
@@ -16,8 +17,11 @@ class HvsaRequests:
     __Domain: str = 'hvsa-handball.liga.nu'
     __HVSA: str = f'{__HTTPS}{__Domain}/cgi-bin/WebObjects/nuLigaHBDE.woa/wa/leaguePage?championship='
 
-    def __init__(self, year: str):
+    def __init__(self, year: str, log_level=logging.INFO):
         self.year: str = year
+        logging.basicConfig(level=log_level)
+        self.logger = logging.getLogger(__name__)
+
 
 
     @staticmethod
@@ -44,7 +48,7 @@ class HvsaRequests:
     async def get_league_sections_league_id(self, league_id: str) -> dict[str, list[dict[str, str]]] | None:
         page = await self.get_league_page_league_id(league_id)
         if page is None:
-            print('No page found for league')
+            self.logger.debug(f'No page found for league: {league_id}')
             return None
         return self.__parse_league_sections(page)
 
@@ -74,7 +78,7 @@ class HvsaRequests:
     async def get_section_teams_league_id_page(self, league_id: str, section: str) -> str | None:
         league_sections = await self.get_league_sections_league_id(league_id)
         if league_sections is None:
-            print('No league found')
+            self.logger.debug(f'No section: {section} found for {league_id}')
             return None
         if section in league_sections and  league_sections[section]:
             for entry in league_sections[section]:
@@ -90,7 +94,6 @@ class HvsaRequests:
         soup = BeautifulSoup(page, 'html.parser')
         table_tag: Tag = soup.find('table', {'class': 'result-set'})
         if table_tag is None:
-            print('No table found')
             return []
         rows = table_tag.find_all('tr')[1:]  # Skip the header row
 
@@ -131,31 +134,43 @@ class HvsaRequests:
 
 
     async def get_section_team_league_id_table(self, league_id: str, section: str) -> list[Table] | None:
+        self.logger.debug(f"Fetching section team league ID table for league_id: {league_id}, section: {section}")
         page = await self.get_section_teams_league_id_page(league_id, section)
         if page is None:
-            print('No section found')
+            self.logger.debug(f'Didn\'t find {section} for {league_id}')
             return None
         return self.__parse_section_teams_page(page)
 
     async def get_section_team_league_id_team_table_entry(self, league_id: str, section: str, team_name: str) -> Table | None:
+        self.logger.debug(f"Fetching table entry for team: {team_name} in league_id: {league_id}, section: {section}")
         list_table: list[Table] = await self.get_section_team_league_id_table(league_id, section)
         if list_table is None:
-            print('No table found')
+            self.logger.debug(f'No table found for {team_name} in {section} for {league_id}')
             return None
         for table in list_table:
             if table.team == team_name:
+                self.logger.debug(f"Found table entry for team: {team_name} in league_id: {league_id}, section: {section}")
                 return table
 
+        self.logger.debug(f"No table entry found for team: {team_name} in league_id: {league_id}, section: {section}")
+        return None
+
     async def get_section_team_league_id_team_table_games_page(self, league_id: str, section: str, team_name: str) -> str | None:
+        self.logger.debug(f"Fetching games page for team: {team_name} in league_id: {league_id}, section: {section}")
         table: Table = await self.get_section_team_league_id_team_table_entry(league_id, section, team_name)
         if table is None:
-            print('No team found')
+            self.logger.debug(f'No team found for {team_name} in {section} for {league_id}')
             return None
         url = self.__HTTPS + self.__Domain + table.url
+        self.logger.debug(f"Fetching URL: {url}")
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
-                response.raise_for_status()
-                return await response.text()
+                if response.status == 200:
+                    self.logger.debug(f"Successfully fetched games page for team: {team_name}")
+                    return await response.text()
+                else:
+                    self.logger.debug(f"Failed to fetch games page for team: {team_name}, status code: {response.status}")
+                    return None
 
 
     async def get_section_team_league_id_team_table_games_ics(self, league_id: str, section: str, team_name: str) -> str:
@@ -185,7 +200,7 @@ class HvsaRequests:
     async def get_section_team_league_id_team_table_games_list(self, league_id: str, section: str, team_name: str) -> list[Games] | None:
         page = await self.get_section_team_league_id_team_table_games_page(league_id, section, team_name)
         if page is None:
-            print('No games found')
+            self.logger.debug(f'No games found for {team_name} in {section} for {league_id} Page was None!')
             return None
         soup = BeautifulSoup(page, 'html.parser')
         table_tag: ResultSet = soup.find_all('table', {'class': 'result-set'})

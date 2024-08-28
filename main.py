@@ -20,7 +20,10 @@ from odf.text import P, Span
 from odf.style import Style, TextProperties
 import os
 import re
+import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
     """
@@ -34,13 +37,13 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
         bool: True if the file was saved successfully, False otherwise.
     """
     if games is None:
-        print("No games provided.")
+        logging.debug("No games provided.")
         return False
     if not games:
-        print("Empty games list.")
+        logging.debug("Empty games list.")
         return False
     if home_teams is []:
-        print("Home team not specified.")
+        logging.debug("Home teams not specified.")
         return False
 
     # Initialize the ODS data structure
@@ -106,10 +109,10 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
         if os.path.exists(f"{home_teams[0]}_games.ods"):
             os.remove(f"{home_teams[0]}_games.ods")
         ods.save(f"{home_teams[0]}_games.ods")
-        print(f"File {home_teams[0]}_games.ods saved successfully.")
+        logging.info(f"File {home_teams[0]}_games.ods saved successfully.")
         return True
     except Exception as e:
-        print(f"Error saving file: {e}")
+        logging.info(f"Error saving file: {e}")
         return False
 
 
@@ -125,19 +128,26 @@ async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | 
     Returns:
         list[Games] | None: A list of games if found, otherwise None.
     """
-    req: HvsaRequests = HvsaRequests(year)
+    req: HvsaRequests = HvsaRequests(year, logging.INFO)
     sections: dict[str, list[dict[str, str]]] = await req.get_league_sections_league_id(league_id)
     if sections is None:
-        print('No sections found')
+        logging.debug('No sections found')
         return None
-    games: list[Games] = []
+    tasks = []
     for section, _ in sections.items():
-        print(f'Getting games for {team_name} in section {section} and league {league_id}')
-        games_req: list[Games] = await req.get_section_team_league_id_team_table_games_list(league_id, section, team_name)
-        if games_req is None:
-            print(f'No games found for {team_name} in section {section} and league {league_id}')
+        logging.debug(f'Getting games for {team_name} in section {section} and league {league_id}')
+        tasks.append(req.get_section_team_league_id_team_table_games_list(league_id, section, team_name))
+
+    results = await asyncio.gather(*tasks)
+
+    games: list[Games] = []
+    for i, result in enumerate(results):
+        section = list(sections.keys())[i]
+        if result is None or result == []:
+            logging.debug(f'No games found for {team_name} in section {section} and league {league_id}')
             continue
-        games.extend(games_req)
+        logging.info(f'Extending games with result from section {section} for team {team_name} in league {league_id}')
+        games.extend(result)
     return games
 
 async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) -> list[Games]:
@@ -166,7 +176,6 @@ async def get_all_games(year: str, league_ids: set[str], team_names: list[str]) 
         if result is None or result == []:
             team_name = team_names[i // len(league_ids)]
             league_id = list(league_ids)[i % len(league_ids)]
-            print(f'No games found for team: {team_name} in league: {league_id}')
             continue
         games.extend(result)
     return games
