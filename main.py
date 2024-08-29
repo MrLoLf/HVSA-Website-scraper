@@ -189,6 +189,58 @@ def export_games_to_xlsx(games: list[Games], file_path: str) -> bool:
         logging.info(f"An error occurred: {e}")
         return False
 
+def export_games_to_html(games: list[Games], file_path: str) -> bool:
+    try:
+        with open(file_path, 'w') as file:
+            # Write the basic HTML structure
+            file.write('<!DOCTYPE html>\n')
+            file.write('<html lang="en">\n')
+            file.write('<head>\n')
+            file.write('<meta charset="UTF-8">\n')
+            file.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">\n')
+            file.write('<title>Games Export</title>\n')
+            file.write('<style>\n')
+            file.write('table { width: 100%; border-collapse: collapse; }\n')
+            file.write('th, td { border: 1px solid black; padding: 8px; text-align: left; }\n')
+            file.write('th { background-color: #f2f2f2; }\n')
+            file.write('</style>\n')
+            file.write('</head>\n')
+            file.write('<body>\n')
+            file.write('<h1>Games Export</h1>\n')
+            file.write('<table>\n')
+            file.write('<tr>\n')
+            file.write('<th>Date</th>\n')
+            file.write('<th>Time</th>\n')
+            file.write('<th>Home Team</th>\n')
+            file.write('<th>Guest Team</th>\n')
+            file.write('<th>Sports Hall</th>\n')
+            file.write('<th>Section</th>\n')
+            file.write('<th>League</th>\n')
+            file.write('</tr>\n')
+
+            # Write the game data
+            for game in games:
+                file.write('<tr>\n')
+                file.write(f'<td>{game.date}</td>\n')
+                file.write(f'<td>{game.time}</td>\n')
+                file.write(f'<td>{game.home_team}</td>\n')
+                file.write(f'<td>{game.guest_team}</td>\n')
+                file.write(f'<td><a href="{game.sports_hall_url}">{game.sports_hall}</a></td>\n')
+                file.write(f'<td>{game.section}</td>\n')
+                file.write(f'<td>{game.league}</td>\n')
+                file.write('</tr>\n')
+
+            # Close the HTML tags
+            file.write('</table>\n')
+            file.write('</body>\n')
+            file.write('</html>\n')
+
+        logging.info(f"Games successfully exported to {file_path}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to export games to HTML: {e}")
+        return False
+
 async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | None:
     """
     Fetch games for a specific team in a specific league and year.
@@ -267,6 +319,7 @@ async def main() -> None:
     export_games_to_ods(games, teams[0])
     export_games_to_csv(games, 'games.csv')
     export_games_to_xlsx(games, 'games.xlsx')
+    export_games_to_html(games, 'index.html')
 
 if __name__ == '__main__':
     asyncio.run(main())
