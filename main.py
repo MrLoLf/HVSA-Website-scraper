@@ -168,6 +168,16 @@ def export_games_to_csv(games: list[Games], file_path: str) -> bool:
         return False
 
 def export_games_to_xlsx(games: list[Games], file_path: str) -> bool:
+    """
+    Export a list of games to an XLSX file.
+
+    Args:
+        games (list[Games]): A list of game objects to be exported.
+        file_path (str): The path where the XLSX file will be saved.
+
+    Returns:
+        bool: True if the export was successful, False otherwise.
+    """
     try:
         # Create a new workbook and select the active worksheet
         workbook = Workbook()
@@ -190,6 +200,16 @@ def export_games_to_xlsx(games: list[Games], file_path: str) -> bool:
         return False
 
 def export_games_to_html(games: list[Games], file_path: str) -> bool:
+    """
+    Export a list of games to an HTML file.
+
+    Args:
+        games (list[Games]): A list of game objects to be exported.
+        file_path (str): The path where the HTML file will be saved.
+
+    Returns:
+        bool: True if the export was successful, False otherwise.
+    """
     try:
         with open(file_path, 'w') as file:
             # Write the basic HTML structure

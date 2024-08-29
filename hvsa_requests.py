@@ -13,11 +13,25 @@ import logging
 
 
 class HvsaRequests:
+    """
+    A class to handle requests to the HVSA website and scrape data.
+
+    Attributes:
+        year (str): The year for which the data is being scraped.
+        logger (logging.Logger): Logger for logging messages.
+    """
     __HTTPS: str = 'https://'
     __Domain: str = 'hvsa-handball.liga.nu'
     __HVSA: str = f'{__HTTPS}{__Domain}/cgi-bin/WebObjects/nuLigaHBDE.woa/wa/leaguePage?championship='
 
     def __init__(self, year: str, log_level=logging.INFO):
+        """
+        Initializes the HvsaRequests class with the specified year and log level.
+
+        Args:
+            year (str): The year for which the data is being scraped.
+            log_level (int, optional): The logging level. Defaults to logging.INFO.
+        """
         self.year: str = year
         logging.basicConfig(level=log_level)
         self.logger = logging.getLogger(__name__)
@@ -26,6 +40,12 @@ class HvsaRequests:
 
     @staticmethod
     def get_league_ids() -> set[str]:
+        """
+        Returns a set of league IDs.
+
+        Returns:
+            set[str]: A set of league IDs.
+        """
         league_ids: set[str] = {
             'MHV',
             'HVSA',
@@ -38,6 +58,15 @@ class HvsaRequests:
 
 
     async def get_league_page_league_id(self, league_id: str) -> str | None:
+        """
+        Fetches the league page for a given league ID and year.
+
+        Args:
+            league_id (str): The league ID for which the page is being fetched.
+
+        Returns:
+            str | None: The HTML content of the league page if successful, None otherwise.
+        """
         url: str = f'{self.__HVSA}{league_id}+{self.year}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
@@ -46,6 +75,15 @@ class HvsaRequests:
                 return await response.text()
 
     async def get_league_sections_league_id(self, league_id: str) -> dict[str, list[dict[str, str]]] | None:
+        """
+        Fetches and parses the league sections for a given league ID.
+
+        Args:
+            league_id (str): The league ID for which the sections are being fetched.
+
+        Returns:
+            dict[str, list[dict[str, str]]] | None: A dictionary where the keys are section names and the values are lists of dictionaries containing team names and URLs, or None if the page is not found.
+        """
         page = await self.get_league_page_league_id(league_id)
         if page is None:
             self.logger.debug(f'No page found for league: {league_id}')
@@ -55,6 +93,15 @@ class HvsaRequests:
 
     @staticmethod
     def __parse_league_sections(page: str) -> dict[str, list[dict[str, str]]]:
+        """
+        Parses the league sections from the HTML page.
+
+        Args:
+            page (str): The HTML content of the league page.
+
+        Returns:
+            dict[str, list[dict[str, str]]]: A dictionary where the keys are section names and the values are lists of dictionaries containing team names and URLs.
+        """
         soup = BeautifulSoup(page, 'html.parser')
         league_section: dict[str, list[dict[str, str]]] = {}
         table: Tag = soup.find('table', {'class': 'matrix'})
@@ -76,6 +123,16 @@ class HvsaRequests:
         return league_section
 
     async def get_section_teams_league_id_page(self, league_id: str, section: str) -> str | None:
+        """
+        Fetches the page for a specific section within a league.
+
+        Args:
+            league_id (str): The league ID for which the section page is being fetched.
+            section (str): The section name for which the page is being fetched.
+
+        Returns:
+            str | None: The HTML content of the section page if successful, None otherwise.
+        """
         league_sections = await self.get_league_sections_league_id(league_id)
         if league_sections is None:
             self.logger.debug(f'No section: {section} found for {league_id}')
@@ -91,6 +148,15 @@ class HvsaRequests:
 
     @staticmethod
     def __parse_section_teams_page(page: str) -> list[Table]:
+        """
+        Parses the section teams page from the HTML content.
+
+        Args:
+            page (str): The HTML content of the section teams page.
+
+        Returns:
+            list[Table]: A list of Table objects containing the parsed data.
+        """
         soup = BeautifulSoup(page, 'html.parser')
         table_tag: Tag = soup.find('table', {'class': 'result-set'})
         if table_tag is None:
@@ -134,6 +200,16 @@ class HvsaRequests:
 
 
     async def get_section_team_league_id_table(self, league_id: str, section: str) -> list[Table] | None:
+        """
+        Fetches the section team league ID table for a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the table is being fetched.
+            section (str): The section name for which the table is being fetched.
+
+        Returns:
+            list[Table] | None: A list of Table objects if successful, None otherwise.
+        """
         self.logger.debug(f"Fetching section team league ID table for league_id: {league_id}, section: {section}")
         page = await self.get_section_teams_league_id_page(league_id, section)
         if page is None:
@@ -142,6 +218,17 @@ class HvsaRequests:
         return self.__parse_section_teams_page(page)
 
     async def get_section_team_league_id_team_table_entry(self, league_id: str, section: str, team_name: str) -> Table | None:
+        """
+        Fetches the table entry for a specific team in a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the table entry is being fetched.
+            section (str): The section name for which the table entry is being fetched.
+            team_name (str): The name of the team for which the table entry is being fetched.
+
+        Returns:
+            Table | None: A Table object if the team is found, None otherwise.
+        """
         self.logger.debug(f"Fetching table entry for team: {team_name} in league_id: {league_id}, section: {section}")
         list_table: list[Table] = await self.get_section_team_league_id_table(league_id, section)
         if list_table is None:
@@ -156,6 +243,17 @@ class HvsaRequests:
         return None
 
     async def get_section_team_league_id_team_table_games_page(self, league_id: str, section: str, team_name: str) -> str | None:
+        """
+        Fetches the games page for a specific team in a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the games page is being fetched.
+            section (str): The section name for which the games page is being fetched.
+            team_name (str): The name of the team for which the games page is being fetched.
+
+        Returns:
+            str | None: The HTML content of the games page if successful, None otherwise.
+        """
         self.logger.debug(f"Fetching games page for team: {team_name} in league_id: {league_id}, section: {section}")
         table: Table = await self.get_section_team_league_id_team_table_entry(league_id, section, team_name)
         if table is None:
@@ -174,12 +272,34 @@ class HvsaRequests:
 
 
     async def get_section_team_league_id_team_table_games_ics(self, league_id: str, section: str, team_name: str) -> str:
+        """
+        Fetches the ICS (iCalendar) URL for the games of a specific team in a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the ICS URL is being fetched.
+            section (str): The section name for which the ICS URL is being fetched.
+            team_name (str): The name of the team for which the ICS URL is being fetched.
+
+        Returns:
+            str: The ICS URL for the team's games.
+        """
         page = await self.get_section_team_league_id_team_table_games_page(league_id, section, team_name)
         soup = BeautifulSoup(page, 'html.parser')
         a = soup.find('a', {'class': 'picto-ical-add'})
         return a['href']
 
     async def get_section_team_league_id_team_table_games_ics_file(self, league_id: str, section: str, team_name: str) -> bool:
+        """
+        Downloads the ICS (iCalendar) file for the games of a specific team in a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the ICS file is being downloaded.
+            section (str): The section name for which the ICS file is being downloaded.
+            team_name (str): The name of the team for which the ICS file is being downloaded.
+
+        Returns:
+            bool: True if the ICS file was successfully downloaded, False otherwise.
+        """
         url: str = await self.get_section_team_league_id_team_table_games_ics(league_id, section, team_name)
         try:
             async with aiohttp.ClientSession() as session:
@@ -198,6 +318,17 @@ class HvsaRequests:
             return False
 
     async def get_section_team_league_id_team_table_games_list(self, league_id: str, section: str, team_name: str) -> list[Games] | None:
+        """
+        Fetches the list of games for a specific team in a given league ID and section.
+
+        Args:
+            league_id (str): The league ID for which the games list is being fetched.
+            section (str): The section name for which the games list is being fetched.
+            team_name (str): The name of the team for which the games list is being fetched.
+
+        Returns:
+            list[Games] | None: A list of Games objects if successful, None otherwise.
+        """
         page = await self.get_section_team_league_id_team_table_games_page(league_id, section, team_name)
         if page is None:
             self.logger.debug(f'No games found for {team_name} in {section} for {league_id} Page was None!')
