@@ -1,6 +1,6 @@
 #!/bin/bash
 cd /home/server/HVSA-Website-scraper
-/usr/bin/python3 main.py
+
 if [ ! -d ".venv" ]; then
     # Create a virtual environment
     /usr/bin/python3 -m venv .venv
