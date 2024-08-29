@@ -21,17 +21,51 @@ from odf.style import Style, TextProperties
 import os
 import re
 import logging
+import csv
+from openpyxl import Workbook
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
+def sort_games(games: list[Games]) -> list[Games]:
+
+    """
+    Sorts the games by date and time.
+
+    Args:
+        games (list[Games]): A list of games to be sorted.
+
+    Returns:
+        list[Games]: The sorted list of games.
+    """
+
+    time_regex = re.compile(r'[\d:]+')
+    date_regex = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')
+
+    # Fill missing dates with the previous entry's date
+    previous_date = None
+    for gam in games:
+        if not date_regex.search(gam.date):
+            gam.date = previous_date
+        else:
+            previous_date = gam.date
+
+    # Sort the games list
+    games.sort(key=lambda gam: (
+        datetime.strptime(date_regex.search(gam.date).group() if date_regex.search(gam.date) else '01.01.1970', '%d.%m.%Y'),
+        datetime.strptime(time_regex.search(gam.time).group() if time_regex.search(gam.time) else '00:00', '%H:%M')
+    ))
+
+    return games
+
+def export_games_to_ods(games: list[Games], file_path: str) -> bool:
     """
     Save the provided games to an ODS file.
 
     Args:
         games (list[Games]): A list of games to be saved.
-        home_teams (list[str]): A list of home team names.
+        file_path (list[str]): A list of home team names.
 
     Returns:
         bool: True if the file was saved successfully, False otherwise.
@@ -42,20 +76,13 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
     if not games:
         logging.debug("Empty games list.")
         return False
-    if home_teams is []:
+    if file_path is []:
         logging.debug("Home teams not specified.")
         return False
 
     # Initialize the ODS data structure
     ods = OpenDocumentSpreadsheet()
 
-    # Sort games by date
-    time_regex = re.compile(r'[\d:]+')
-    date_regex = re.compile(r'^\d{2}\.\d{2}\.\d{4}$')
-    games.sort(key=lambda gam: (
-        datetime.strptime(date_regex.search(gam.date).group() if date_regex.search(gam.date) else '01.01.1970', '%d.%m.%Y'),
-        datetime.strptime(time_regex.search(gam.time).group() if time_regex.search(gam.time) else '00:00', '%H:%M')
-    ))
     # Define styles for coloring text
     red_text_style = Style(name="RedText", family="text")
     red_text_style.addElement(TextProperties(color="#FF0000"))
@@ -106,15 +133,61 @@ def save_games_to_ods(games: list[Games], home_teams: list[str]) -> bool:
 
     # Save the ODS file
     try:
-        if os.path.exists(f"{home_teams[0]}_games.ods"):
-            os.remove(f"{home_teams[0]}_games.ods")
-        ods.save(f"{home_teams[0]}_games.ods")
-        logging.info(f"File {home_teams[0]}_games.ods saved successfully.")
+        if os.path.exists(f"{file_path}.ods"):
+            os.remove(f"{file_path}.ods")
+        ods.save(f"{file_path}.ods")
+        logging.info(f"File {file_path}.ods saved successfully.")
         return True
     except Exception as e:
         logging.info(f"Error saving file: {e}")
         return False
 
+def export_games_to_csv(games: list[Games], file_path: str) -> bool:
+    """
+    Exports the games to a CSV file.
+
+    Args:
+        games (list[Games]): A list of games to be exported.
+        file_path (str): The path to the CSV file.
+
+    Returns:
+        bool: True if the export was successful, False otherwise.
+    """
+    try:
+        with open(file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            # Write the header
+            writer.writerow(['Date', 'Time', 'Home Team', 'Guest Team', 'Sports Hall', 'Sports Hall URL', 'Section', 'League'])
+            # Write the game data
+            for game in games:
+                writer.writerow([game.date, game.time ,game.home_team, game.guest_team, game.sports_hall, game.sports_hall_url, game.section, game.league])
+        logging.info(f"Games successfully exported to {file_path}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to export games to CSV: {e}")
+        return False
+
+def export_games_to_xlsx(games: list[Games], file_path: str) -> bool:
+    try:
+        # Create a new workbook and select the active worksheet
+        workbook = Workbook()
+        sheet = workbook.active
+
+        # Write the headers
+        headers = ['Date', 'Time', 'Home Team', 'Guest Team', 'Sports Hall', 'Sports Hall URL', 'Section', 'League']
+        sheet.append(headers)
+
+        # Write the game data
+        for game in games:
+            sheet.append([game.date, game.time ,game.home_team, game.guest_team, game.sports_hall, game.sports_hall_url, game.section, game.league])
+
+        # Save the workbook to the specified file path
+        workbook.save(file_path)
+        logging.info(f"Games successfully exported to {file_path}")
+        return True
+    except Exception as e:
+        logging.info(f"An error occurred: {e}")
+        return False
 
 async def get_games(year: str, league_id: str, team_name: str) -> list[Games] | None:
     """
@@ -190,7 +263,10 @@ async def main() -> None:
     req: HvsaRequests = HvsaRequests(year)
     league_ids: set[str] = req.get_league_ids()
     games: list[Games] = await get_all_games(year, league_ids, teams)
-    save_games_to_ods(games, teams)
+    games = sort_games(games)
+    export_games_to_ods(games, teams[0])
+    export_games_to_csv(games, 'games.csv')
+    export_games_to_xlsx(games, 'games.xlsx')
 
 if __name__ == '__main__':
     asyncio.run(main())
