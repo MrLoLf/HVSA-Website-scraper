@@ -1,7 +1,7 @@
 from attr import dataclass
 
 
-@dataclass
+@dataclass(eq=True, frozen=True)
 class Games:
     """
     A data class to store information about a game.

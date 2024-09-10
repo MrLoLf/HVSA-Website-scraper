@@ -14,6 +14,7 @@ class Config:
     """
     year: str
     teams: list[str]
+    team_number: int
 
 def load_config() -> Config:
     """
@@ -27,4 +28,5 @@ def load_config() -> Config:
     year: str = config.get('HVSA', 'year')
     year = year.replace('/', '%2F').strip()
     teams = [team.strip() for team in config.get('HVSA', 'teams').split(',')]
-    return Config(year, teams)
+    team_number: int =  config.getint('HVSA', 'team_number')
+    return Config(year, teams, team_number)

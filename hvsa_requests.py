@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup, Tag, ResultSet
 from table import Table
 from games import Games
 import logging
+from tenacity import retry, stop_after_attempt, wait_fixed
+
 
 
 class HvsaRequests:
@@ -56,7 +58,7 @@ class HvsaRequests:
         }
         return league_ids
 
-
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_league_page_league_id(self, league_id: str) -> str | None:
         """
         Fetches the league page for a given league ID and year.
@@ -74,6 +76,7 @@ class HvsaRequests:
                     return None
                 return await response.text()
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_league_sections_league_id(self, league_id: str) -> dict[str, list[dict[str, str]]] | None:
         """
         Fetches and parses the league sections for a given league ID.
@@ -122,6 +125,8 @@ class HvsaRequests:
                     league_section[category].append({'name': team_name, 'url': team_url})
         return league_section
 
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_teams_league_id_page(self, league_id: str, section: str) -> str | None:
         """
         Fetches the page for a specific section within a league.
@@ -145,6 +150,7 @@ class HvsaRequests:
                         response.raise_for_status()
                         return await response.text()
         return None
+
 
     @staticmethod
     def __parse_section_teams_page(page: str) -> list[Table]:
@@ -199,6 +205,7 @@ class HvsaRequests:
         return tables
 
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_table(self, league_id: str, section: str) -> list[Table] | None:
         """
         Fetches the section team league ID table for a given league ID and section.
@@ -217,6 +224,8 @@ class HvsaRequests:
             return None
         return self.__parse_section_teams_page(page)
 
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_team_table_entry(self, league_id: str, section: str, team_name: str) -> Table | None:
         """
         Fetches the table entry for a specific team in a given league ID and section.
@@ -242,6 +251,8 @@ class HvsaRequests:
         self.logger.debug(f"No table entry found for team: {team_name} in league_id: {league_id}, section: {section}")
         return None
 
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_team_table_games_page(self, league_id: str, section: str, team_name: str) -> str | None:
         """
         Fetches the games page for a specific team in a given league ID and section.
@@ -271,6 +282,7 @@ class HvsaRequests:
                     return None
 
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_team_table_games_ics(self, league_id: str, section: str, team_name: str) -> str:
         """
         Fetches the ICS (iCalendar) URL for the games of a specific team in a given league ID and section.
@@ -288,6 +300,8 @@ class HvsaRequests:
         a = soup.find('a', {'class': 'picto-ical-add'})
         return a['href']
 
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_team_table_games_ics_file(self, league_id: str, section: str, team_name: str) -> bool:
         """
         Downloads the ICS (iCalendar) file for the games of a specific team in a given league ID and section.
@@ -317,6 +331,8 @@ class HvsaRequests:
             print(e)
             return False
 
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def get_section_team_league_id_team_table_games_list(self, league_id: str, section: str, team_name: str) -> list[Games] | None:
         """
         Fetches the list of games for a specific team in a given league ID and section.
